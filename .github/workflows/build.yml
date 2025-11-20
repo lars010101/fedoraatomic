@@ -27,7 +27,7 @@ jobs:
       - name: Build and push with Buildah
         uses: redhat-actions/buildah-build@v2
         with:
-          image: ${{ secrets.QUAY_USER }}/${{ vars.IMAGE_NAME }} 
+          image: ${{ vars.IMAGE_NAME }} 
           tags: |
             ${{ github.sha }}
             latest
@@ -35,7 +35,7 @@ jobs:
             ./Containerfile   # change to ./Dockerfile if you use that name
           oci: false          # false = Docker format (required for Quay compatibility)
           layers: true        # cache layers = much faster rebuilds
-          registry: quay.io
+          registry: quay.io/${{ secrets.QUAY_USER }}
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
 
