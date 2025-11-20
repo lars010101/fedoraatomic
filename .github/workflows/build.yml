@@ -34,6 +34,10 @@ jobs:
       - name: Checkout Push to Registry action
         uses: actions/checkout@v4
 
+      - name: Log in to Quay.io for Buildah
+        run: |
+          echo "${{ secrets.QUAY_TOKEN }}" | buildah login -u "${{ secrets.QUAY_USER }}" --password-stdin quay.io
+
       - name: Generate tags
         id: generate-tags
         shell: bash
