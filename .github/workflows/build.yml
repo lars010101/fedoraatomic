@@ -1,99 +1,46 @@
-name: build-myFedora
+name: Build and push image
+
 on:
-  workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-  schedule:
-    - cron: '20 20 * * *'  # 8:20pm everyday
   push:
-    branches:
-      - main
-env:
-    IMAGE_NAME: customatomic
-    IMAGE_REGISTRY: quay.io/${{ secrets.QUAY_USER }}
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:   # allows manual runs
 
 jobs:
-  push-ghcr:
-    name: Build and push image
-    runs-on: ubuntu-22.04
+  build-and-push:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
-      id-token: write
-    strategy:
-      fail-fast: false
-      matrix:
-        major_version: [43]
-        include:
-          - major_version: 43
-            is_latest: true
-            is_stable: true
-    steps: 
-      # Checkout push-to-registry action GitHub repository
-      - name: Checkout Push to Registry action
+      packages: write   # needed for some registries
+
+    steps:
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to Quay.io for Buildah
+      - name: Free up disk space (optional but recommended on GitHub runners)
         run: |
-          echo "${{ secrets.QUAY_TOKEN }}" | buildah login -u "${{ secrets.QUAY_USER }}" --password-stdin quay.io
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - name: Generate tags
-        id: generate-tags
-        shell: bash
-        run: |
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          alias_tags=()
-          # Only perform the follow code when the action is spawned from a Pull Request
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            alias_tags+=("pr-${{ github.event.number }}")
-          else
-            # The following is run when the timer is triggered or a merge/push to main
-            echo "date=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
-            alias_tags+=("${{ matrix.major_version }}")
-            if [[ "${{ matrix.is_latest }}" == "true" ]]; then
-              alias_tags+=("latest")
-            fi
-            if [[ "${{ matrix.is_stable }}" == "true" ]]; then
-              alias_tags+=("stable")
-            fi
-          fi
-          echo "alias_tags=${alias_tags[*]}" >> $GITHUB_OUTPUT
-
-      # Build image using Buildah action
-      - name: Build Image
-        id: build_image
+      - name: Build and push with Buildah
         uses: redhat-actions/buildah-build@v2
         with:
-          containerfiles: |
-            ./Containerfile
-          image: ${{ env.IMAGE_NAME }}
-          tags: |
-            ${{ steps.generate-tags.outputs.alias_tags }}
-            ${{ steps.generate-tags.outputs.date }}
-            ${{ steps.generate-tags.outputs.sha_short }}
-          build-args: |
-            FEDORA_MAJOR_VERSION=${{ matrix.major_version }}
-          oci: true
-
-      - name: Login to Quay.io
-        uses: docker/login-action@v3
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USER }}
-          password: ${{ secrets.QUAY_TOKEN }}     # create a robot token in Quay settings
-
-      - name: Push to Quay.io
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ secrets.QUAY_USER }}/${{ vars.IMAGE_NAME }}   
+          image: ${{ secrets.QUAY_USER }}/${{ vars.IMAGE_NAME }} 
           tags: |
             ${{ github.sha }}
             latest
+          containerfiles: |
+            ./Containerfile   # change to ./Dockerfile if you use that name
+          oci: false          # false = Docker format (required for Quay compatibility)
+          layers: true        # cache layers = much faster rebuilds
           registry: quay.io
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
 
-      - name: Echo outputs
+      - name: Verify push (optional but nice)
         run: |
-          echo "${{ toJSON(steps.push.outputs) }}"
+          echo "Image pushed:"
+          echo "quay.io/${{ secrets.QUAY_USER }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}"
+          echo "quay.io/${{ secrets.QUAY_USER }}/${{ vars.IMAGE_NAME }}:latest"
