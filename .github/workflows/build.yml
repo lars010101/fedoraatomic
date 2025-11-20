@@ -79,13 +79,14 @@ jobs:
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_TOKEN }}     # create a robot token in Quay settings
 
-      - name: Push OCI image to Quay.io
+      - name: Push to Quay.io
         uses: redhat-actions/push-to-registry@v2
-        id: push_oci
         with:
-          image: ${{ steps.build_oci.outputs.image }}
-          tags: ${{ steps.build_oci.outputs.tags }}
-          registry: quay.io                       
+          image: ${{ secrets.QUAY_USER }}/${{ vars.IMAGE_NAME }}   
+          tags: |
+            ${{ github.sha }}
+            latest
+          registry: quay.io
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
 
