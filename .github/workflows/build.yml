@@ -11,7 +11,7 @@ on:
       - main
 env:
     IMAGE_NAME: customatomic
-    IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+    IMAGE_REGISTRY: quay.io/${{ secrets.QUAY_USER }}
 
 jobs:
   push-ghcr:
@@ -72,60 +72,22 @@ jobs:
             FEDORA_MAJOR_VERSION=${{ matrix.major_version }}
           oci: true
 
-      # Workaround bug where capital letters in your GitHub username make it impossible to push to GHCR.
-      # https://github.com/macbre/push-to-ghcr/issues/12
-      - name: Lowercase Registry
-        id: registry_case
-        uses: ASzc/change-string-case-action@v6
-        with:
-          string: ${{ env.IMAGE_REGISTRY }}
-
-      # Push the image to GHCR (Image Registry)
-      - name: Push To GHCR
-        uses: redhat-actions/push-to-registry@v2
-        id: push
-        env:
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_PASSWORD: ${{ github.token }}
-        with:
-          image: ${{ steps.build_image.outputs.image }}
-          tags: ${{ steps.build_image.outputs.tags }}
-          registry: ${{ steps.registry_case.outputs.lowercase }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-          extra-args: |
-            --disable-content-trust
-
-      - name: cosign-installer
-        uses: sigstore/cosign-installer@v3.1.1
-
-      - name: Write signing key to disk
-        run: 'echo "$KEY" > cosign.key'
-        shell: bash
-        env:
-          KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-
-      - name: Login to GitHub Container Registry
+      - name: Login to Quay.io
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: quay.io
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_TOKEN }}     # create a robot token in Quay settings
 
-      - name: Sign OCI image
-        if: github.event_name != 'pull_request'
-        run: |
-          IMAGE="${{ steps.registry_case.outputs.lowercase }}/${{ env.IMAGE_NAME }}"
-
-          # Sign the two tags that always exist and matter
-          cosign sign --yes --key cosign.key "${IMAGE}:latest"
-          cosign sign --yes --key cosign.key "${IMAGE}:${{ matrix.major_version }}"
-
-          # Optional: also sign the dated and sha tags if you want
-          cosign sign --yes --key cosign.key "${IMAGE}:${{ steps.generate-tags.outputs.date }}" || true
-          cosign sign --yes --key cosign.key "${IMAGE}:${{ steps.generate-tags.outputs.sha_short }}" || true
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      - name: Push OCI image to Quay.io
+        uses: redhat-actions/push-to-registry@v2
+        id: push_oci
+        with:
+          image: ${{ steps.build_oci.outputs.image }}
+          tags: ${{ steps.build_oci.outputs.tags }}
+          registry: quay.io                       
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Echo outputs
         run: |
