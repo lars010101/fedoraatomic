@@ -35,7 +35,7 @@ jobs:
           oci: false          # false = Docker format (required for Quay compatibility)
           layers: true        # cache layers = much faster rebuilds
           registry: quay.io/${{ secrets.QUAY_USER }}
-          username: ${{ secrets.QUAY_USER }}
+          username: ${{ secrets.QUAY_ROBOT_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Verify push (optional but nice)
