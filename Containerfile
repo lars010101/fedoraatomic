@@ -14,8 +14,10 @@ COPY etc /etc
 
 COPY ublue-firstboot /usr/bin
 
+#add install for gnome-tweaks and gnome-clocks if running silverblue
+
 RUN rpm-ostree override remove firefox firefox-langpacks &&  \
-    rpm-ostree install wireguard-tools fail2ban gnome-tweaks gnome-clocks rclone smartmontools iotop distrobox && \
+    rpm-ostree install wireguard-tools fail2ban rclone smartmontools iotop distrobox && \
     sed -i 's/#AutomaticUpdatePolicy.*/AutomaticUpdatePolicy=stage/' /etc/rpm-ostreed.conf && \
     systemctl enable rpm-ostreed-automatic.timer && \
     systemctl enable flatpak-automatic.timer && \
