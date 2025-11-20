@@ -31,8 +31,7 @@ jobs:
           tags: |
             ${{ github.sha }}
             latest
-          containerfiles: |
-            ./Containerfile   # change to ./Dockerfile if you use that name
+          containerfiles: ./Containerfile   # change to ./Dockerfile if you use that name
           oci: false          # false = Docker format (required for Quay compatibility)
           layers: true        # cache layers = much faster rebuilds
           registry: quay.io/${{ secrets.QUAY_USER }}
