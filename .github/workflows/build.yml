@@ -34,6 +34,7 @@ jobs:
           containerfiles: ./Containerfile   # change to ./Dockerfile if you use that name
           oci: false          # false = Docker format (required for Quay compatibility)
           layers: true        # cache layers = much faster rebuilds
+          push: true
           registry: quay.io/${{ secrets.QUAY_USER }}
           username: ${{ secrets.QUAY_ROBOT_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
