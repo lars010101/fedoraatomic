@@ -4,42 +4,54 @@ on:
   push:
     branches: [ main ]
   pull_request:
-  workflow_dispatch:   # allows manual runs
+  workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write   # needed for some registries
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Free up disk space (optional but recommended on GitHub runners)
+      - name: Free up disk space (optional but recommended)
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - name: Build and push with Buildah
-        uses: redhat-actions/buildah-build@v2
+      - name: Login to Quay.io
+        uses: redhat-actions/podman-login@v1
         with:
-          image: ${{ vars.IMAGE_NAME }} 
-          tags: |
-            ${{ github.sha }}
-            latest
-          containerfiles: ./Containerfile   # change to ./Dockerfile if you use that name
-          oci: false          # false = Docker format (required for Quay compatibility)
-          layers: true        # cache layers = much faster rebuilds
-          push: true
-          registry: quay.io/${{ secrets.QUAY_USER }}
+          registry: quay.io
           username: ${{ secrets.QUAY_ROBOT_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
 
-      - name: Verify push (optional but nice)
+      - name: Build with Buildah
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ vars.IMAGE_NAME }}
+          tags: |
+            ${{ github.sha }}
+            latest
+          containerfiles: ./Containerfile
+          oci: false
+          layers: true
+
+      - name: Push to Quay.io
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ vars.IMAGE_NAME }}
+          tags: |
+            ${{ github.sha }}
+            latest
+          registry: quay.io/${{ secrets.QUAY_USER }}
+
+      - name: Verify push
         run: |
           echo "Image pushed:"
           echo "quay.io/${{ secrets.QUAY_USER }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}"
