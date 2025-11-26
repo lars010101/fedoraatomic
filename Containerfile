@@ -13,10 +13,17 @@ COPY ublue-firstboot /usr/bin
 #add install for gnome-tweaks and gnome-clocks if running silverblue
 
 RUN rpm-ostree override remove firefox firefox-langpacks &&  \
-    rpm-ostree install wireguard-tools fail2ban rclone smartmontools iotop distrobox qutebrowser pipx && \
+    rpm-ostree install wireguard-tools fail2ban rclone smartmontools iotop qutebrowser && \
     sed -i 's/#AutomaticUpdatePolicy.*/AutomaticUpdatePolicy=stage/' /etc/rpm-ostreed.conf && \
     systemctl enable rpm-ostreed-automatic.timer && \
     systemctl enable flatpak-automatic.timer
+
+# Add GitHub CLI repo and layer gh
+RUN rpm --import https://cli.github.com/packages/rpm/githubcli.asc && \
+    mkdir -p /etc/yum.repos.d && \
+    curl -Ls https://cli.github.com/packages/rpm/githubcli.repo -o /etc/yum.repos.d/githubcli.repo && \
+    rpm-ostree install gh && \
+    rpm-ostree cleanup
 
 # Sway: Auto-unlock GNOME Keyring (no prompts for Edge, Chrome, VPN, etc.)
 RUN printf '%s\n' \
