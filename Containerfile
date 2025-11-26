@@ -19,11 +19,11 @@ RUN rpm-ostree override remove firefox firefox-langpacks &&  \
     systemctl enable flatpak-automatic.timer
 
 # Add GitHub CLI repo and layer gh
-RUN rpm --import https://cli.github.com/packages/rpm/githubcli.asc && \
+RUN rpm --import https://packages.github.com/github-cli/github-cli.gpg && \
     mkdir -p /etc/yum.repos.d && \
-    curl -Ls https://cli.github.com/packages/rpm/githubcli.repo -o /etc/yum.repos.d/githubcli.repo && \
+    curl -Ls https://packages.github.com/github-cli/github-cli.repo -o /etc/yum.repos.d/github-cli.repo && \
     rpm-ostree install gh && \
-    rpm-ostree cleanup
+    rpm-ostree cleanup -m
 
 # Sway: Auto-unlock GNOME Keyring (no prompts for Edge, Chrome, VPN, etc.)
 RUN printf '%s\n' \
