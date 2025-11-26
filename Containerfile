@@ -19,7 +19,9 @@ RUN rpm-ostree override remove firefox firefox-langpacks &&  \
     systemctl enable flatpak-automatic.timer
 
 # Add GitHub CLI repo and layer gh
-RUN rpm --import https://packages.github.com/github-cli/github-cli.gpg && \
+RUN curl -Ls https://packages.github.com/github-cli/github-cli.gpg -o /tmp/github-cli.gpg && \
+    rpm --import /tmp/github-cli.gpg && \
+    rm /tmp/github-cli.gpg && \
     mkdir -p /etc/yum.repos.d && \
     curl -Ls https://packages.github.com/github-cli/github-cli.repo -o /etc/yum.repos.d/github-cli.repo && \
     rpm-ostree install gh && \
