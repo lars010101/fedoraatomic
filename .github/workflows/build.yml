@@ -1,6 +1,8 @@
 name: Build and push image
 
 on:
+  schedule:
+    - cron: '20 20 * * *'  # 8:20pm everyday
   push:
     branches: [ main ]
   pull_request:
