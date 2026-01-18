@@ -39,7 +39,7 @@ jobs:
             ${{ github.sha }}
             latest
           containerfiles: ./Containerfile
-          oci: false
+          oci: true
           layers: true
 
       - name: Push to Quay.io
