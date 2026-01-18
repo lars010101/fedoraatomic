@@ -1,6 +1,0 @@
-[Unit]
-Description=Low battery level check and notification
-
-[Service]
-Type=oneshot
-ExecStart=exec /etc/profile.d/low-battery-check.sh
