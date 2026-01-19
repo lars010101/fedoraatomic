@@ -27,5 +27,3 @@ RUN printf '%s\n' \
     echo -n "" > /etc/skel/.local/share/keyrings/default && \
     ostree container commit
 
-# Sway: Add low battery check notification pop-up since waybar is hidden
-# RUN systemctl enable low-battery-check.timer
